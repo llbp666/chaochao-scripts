@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         超超自动学习
 // @namespace    https://auto-study.local
-// @version      1.5
+// @version      1.8
 // @description  百家云继续教育平台：自动播放+自动答题+防后台暂停+自动切集；TrainPro平台：倍速控制+超超托管。
 // @match        *://*/*
 // @exclude      *://github.com/*
