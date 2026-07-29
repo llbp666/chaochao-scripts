@@ -51,6 +51,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('fs')
+          const crypto = require('crypto')
           const response = JSON.parse(
             fs.readFileSync('kdocs-response.json', 'utf8')
           )
@@ -73,6 +74,16 @@ jobs:
           const version = String(result.version || '').trim()
           const note = String(result.note || '').trim()
           const downloadURL = String(result.downloadURL || '').trim()
+          const publish = String(result.publish || '').trim()
+
+          if (publish !== '是' && publish !== '否') {
+            throw new Error('Publish switch must be 是 or 否')
+          }
+
+          if (publish === '否') {
+            console.log('Publishing is disabled; version.json remains unchanged')
+            process.exit(0)
+          }
 
           if (!/^\d+(?:\.\d+)+$/.test(version)) {
             throw new Error('Invalid version number')
@@ -106,11 +117,16 @@ jobs:
             }
           }
 
+          const authorizedHashes = authorized.map(code =>
+            crypto.createHash('sha256').update(code).digest('hex').toUpperCase()
+          )
+
           const output = {
             version,
             note,
             downloadURL,
-            authorized
+            authorized,
+            authorizedHashes
           }
 
           fs.writeFileSync(
