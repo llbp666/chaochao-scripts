@@ -1,0 +1,138 @@
+name: Sync KDocs authorization
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-kdocs-authorization
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read configuration from KDocs
+        env:
+          KD_AIRSCRIPT_TOKEN: ${{ secrets.KD_AIRSCRIPT_TOKEN }}
+          KD_AIRSCRIPT_WEBHOOK: ${{ secrets.KD_AIRSCRIPT_WEBHOOK }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$KD_AIRSCRIPT_TOKEN" ] || [ -z "$KD_AIRSCRIPT_WEBHOOK" ]; then
+            echo "KDocs secrets are missing"
+            exit 1
+          fi
+
+          status_code=$(curl --silent --show-error \
+            --output kdocs-response.json \
+            --write-out "%{http_code}" \
+            --request POST \
+            --url "$KD_AIRSCRIPT_WEBHOOK" \
+            --header "AirScript-Token: $KD_AIRSCRIPT_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"Context":{"argv":{}}}')
+
+          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+            echo "KDocs request failed with HTTP $status_code"
+            exit 1
+          fi
+
+      - name: Validate and build version.json
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const response = JSON.parse(
+            fs.readFileSync('kdocs-response.json', 'utf8')
+          )
+
+          if (response.status !== 'finished' || response.error) {
+            throw new Error(
+              response.error || 'AirScript did not finish successfully'
+            )
+          }
+
+          let result = response.data && response.data.result
+          if (typeof result === 'string') {
+            result = JSON.parse(result)
+          }
+
+          if (!result || typeof result !== 'object') {
+            throw new Error('AirScript returned no configuration')
+          }
+
+          const version = String(result.version || '').trim()
+          const note = String(result.note || '').trim()
+          const downloadURL = String(result.downloadURL || '').trim()
+
+          if (!/^\d+(?:\.\d+)+$/.test(version)) {
+            throw new Error('Invalid version number')
+          }
+
+          if (!/^https:\/\//i.test(downloadURL)) {
+            throw new Error('Invalid download URL')
+          }
+
+          if (!Array.isArray(result.authorized)) {
+            throw new Error('Authorized list is missing')
+          }
+
+          const authorized = [
+            ...new Set(
+              result.authorized.map(code =>
+                String(code).trim().toUpperCase()
+              )
+            )
+          ]
+
+          if (!authorized.length) {
+            throw new Error(
+              'Authorized list is empty; refusing to revoke every machine'
+            )
+          }
+
+          for (const code of authorized) {
+            if (!/^[A-F0-9]{4}(?:-[A-F0-9]{4}){3}$/.test(code)) {
+              throw new Error(`Invalid machine code: ${code}`)
+            }
+          }
+
+          const output = {
+            version,
+            note,
+            downloadURL,
+            authorized
+          }
+
+          fs.writeFileSync(
+            'version.json',
+            JSON.stringify(output, null, 2) + '\n',
+            'utf8'
+          )
+          NODE
+
+      - name: Publish changed configuration
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- version.json; then
+            echo "version.json is already up to date"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add version.json
+          git commit -m "同步金山文档授权配置"
+          git push
