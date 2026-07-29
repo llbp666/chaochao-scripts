@@ -2,7 +2,7 @@
 // @name         我超爱学习的
 // @namespace    https://auto-study.local
 // @version      2.1.1
-// @description  百家云自动学习；TrainPro 倍速与懒人模式；山东交通继续教育倍速、自动答题和自动续学。
+// @description  百家云自动学习；TrainPro 倍速与懒人模式；交通继续教育倍速、自动答题和自动续学。
 // @match        http://111.34.208.70:9091/learning/*
 // @match        http://111.34.208.71:5332/trainPro/*
 // @match        http://119.148.161.193:9090/continuEducation/*
