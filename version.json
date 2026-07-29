@@ -1,11 +1,11 @@
 {
   "version": "1.10.8",
-  "note": "修复了一些bug",
+  "note": "加入“交安”继续教育",
   "downloadURL": "https://raw.githubusercontent.com/llbp666/chaochao-scripts/main/%E8%B6%85%E8%B6%85%E8%87%AA%E5%8A%A8%E5%AD%A6%E4%B9%A0_user.js",
   "authorized": [
-    "B48F-E671-1C05-4B19"
-    "A36C-DAB1-87F0-C8CD"
-    "FB6E-7B89-5BA0-3BC9"
+    "B48F-E671-1C05-4B19",
+    "A36C-DAB1-87F0-C8CD",
+    "FB6E-7B89-5BA0-3BC9",
     "2968-06C0-B4C1-0C34"
   ]
 }
