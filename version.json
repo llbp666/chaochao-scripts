@@ -1,16 +1,7 @@
 {
   "version": "2.1.3",
-  "note": "加入“jiao an”平台，更新新网址",
+  "note": "新增“交安”平台学习，更新新网址",
   "downloadURL": "https://raw.githubusercontent.com/llbp666/chaochao-scripts/main/%E6%88%91%E8%B6%85%E7%88%B1%E5%AD%A6%E4%B9%A0%E7%9A%84_user.js",
-  "authorized": [
-    "B48F-E671-1C05-4B19",
-    "A36C-DAB1-87F0-C8CD",
-    "FB6E-7B89-5BA0-3BC9",
-    "2968-06C0-B4C1-0C34",
-    "BEE5-6242-2576-D710",
-    "EAA7-DD1E-16E8-9A56",
-    "401E-215B-A52C-90B3"
-  ],
   "authorizedHashes": [
     "7A24CADED7861BEE82C0FA8F318D8804BE7EDF9BE7BA0D2FD4C0C6F34E13F213",
     "4032E57244A22FC47E8D1F51D3F09D581F3F500E830F5C242BAE0B63017B85A3",
