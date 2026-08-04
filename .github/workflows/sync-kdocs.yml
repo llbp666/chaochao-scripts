@@ -52,8 +52,14 @@ jobs:
           node <<'NODE'
           const fs = require('fs')
           const crypto = require('crypto')
+          const { execFileSync } = require('child_process')
+          const expectedDownloadURL =
+            'https://raw.githubusercontent.com/llbp666/chaochao-scripts/main/%E6%88%91%E8%B6%85%E7%88%B1%E5%AD%A6%E4%B9%A0%E7%9A%84_user.js'
           const response = JSON.parse(
             fs.readFileSync('kdocs-response.json', 'utf8')
+          )
+          const existing = JSON.parse(
+            fs.readFileSync('version.json', 'utf8')
           )
 
           if (response.status !== 'finished' || response.error) {
@@ -80,17 +86,16 @@ jobs:
             throw new Error('Publish switch must be 是 or 否')
           }
 
-          if (publish === '否') {
-            console.log('Publishing is disabled; version.json remains unchanged')
-            process.exit(0)
-          }
-
           if (!/^\d+(?:\.\d+)+$/.test(version)) {
             throw new Error('Invalid version number')
           }
 
           if (!/^https:\/\//i.test(downloadURL)) {
             throw new Error('Invalid download URL')
+          }
+
+          if (downloadURL !== expectedDownloadURL) {
+            throw new Error('Download URL is not the canonical release file')
           }
 
           if (!Array.isArray(result.authorized)) {
@@ -121,11 +126,66 @@ jobs:
             crypto.createHash('sha256').update(code).digest('hex').toUpperCase()
           )
 
+          if (publish === '是') {
+            const releaseScript = execFileSync(
+              'curl',
+              ['--silent', '--show-error', '--fail', '--location', downloadURL],
+              { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 }
+            )
+            const readMeta = key => {
+              const match = releaseScript.match(
+                new RegExp(`^\\s*//\\s*@${key}\\s+(.+?)\\s*$`, 'mi')
+              )
+              return match ? match[1].trim() : ''
+            }
+            const scriptName = readMeta('name')
+            const scriptVersion = readMeta('version')
+            const scriptUpdateURL = readMeta('updateURL')
+            const scriptDownloadURL = readMeta('downloadURL')
+
+            if (scriptName !== '我超爱学习的') {
+              throw new Error('Release script name is incorrect')
+            }
+            if (scriptVersion !== version) {
+              throw new Error(
+                `Release script version ${scriptVersion || '(missing)'} does not match ${version}`
+              )
+            }
+            if (
+              scriptUpdateURL !== expectedDownloadURL ||
+              scriptDownloadURL !== expectedDownloadURL
+            ) {
+              throw new Error('Release script update URL is incorrect')
+            }
+          }
+
+          const release = publish === '是'
+            ? { version, note, downloadURL }
+            : {
+                version: String(existing.version || '').trim(),
+                note: String(existing.note || '').trim(),
+                downloadURL: String(existing.downloadURL || '').trim()
+              }
+
+          if (!/^\d+(?:\.\d+)+$/.test(release.version)) {
+            throw new Error('Existing version number is invalid')
+          }
+
+          if (!/^https:\/\//i.test(release.downloadURL)) {
+            throw new Error('Existing download URL is invalid')
+          }
+
           const output = {
-            version,
-            note,
-            downloadURL,
+            version: release.version,
+            note: release.note,
+            downloadURL: release.downloadURL,
             authorizedHashes
+          }
+
+          if (publish === '否') {
+            console.log(
+              'Release publishing is disabled; only authorization hashes will sync'
+            )
           }
 
           fs.writeFileSync(
