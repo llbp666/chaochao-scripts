@@ -125,7 +125,6 @@ jobs:
             version,
             note,
             downloadURL,
-            authorized,
             authorizedHashes
           }
 
